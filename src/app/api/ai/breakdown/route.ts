@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../../../lib/auth';
+import { authOptions } from '../../../lib/auth';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { calculateNewDueDate, mapGoogleTaskToKanbanTask } from '../../../../lib/task-utils';
+import { calculateNewDueDate, mapGoogleTaskToKanbanTask } from '../../../lib/task-utils';
 import { google } from 'googleapis';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
