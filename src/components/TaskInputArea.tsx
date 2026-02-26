@@ -40,7 +40,7 @@ export function TaskInputArea() {
             const res = await fetch('/api/ai/breakdown', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: aiTask })
+                body: JSON.stringify({ prompt: aiTask, targetDate: dueDate })
             });
             if (res.ok) {
                 setAiTask('');

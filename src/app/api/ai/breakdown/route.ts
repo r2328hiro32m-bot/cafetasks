@@ -22,18 +22,19 @@ export async function POST(request: Request) {
     }
 
     try {
-        const { prompt } = await request.json();
+        const { prompt, targetDate } = await request.json();
         if (!prompt) return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
 
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const systemInstruction = `
-      あなたはユーザーの「ざっくりしたタスク（例：週末の旅行の準備をする）」を、
-      具体的で実行可能な小さなステップ（3〜5個程度）に分解するアシスタントです。
-      各ステップには、そのステップが実行されるべき論理的な相対的な期日（'today', 'tomorrow', 'week', 'later'）を割り当ててください。
+      あなたはユーザーの「ざっくりしたタスク」を、具体的で実行可能な小さなステップ（3〜5個程度）に分解するアシスタントです。
+      目標となる最終期日: ${targetDate ? targetDate : '指定なし（適切な日付を推測して割り当ててください）'}
+      現在の日付は ${new Date().toISOString().split('T')[0]} です。
+      各ステップには、今日から最終期日までの間で、実行すべき具体的な日付(YYYY-MM-DD形式)を割り当ててください。
       結果は必ず以下の形式のJSON配列のみ出力してください。バッククオートやmarkdownは不要です。
       [
-        { "title": "ステップ名", "suggestedColumn": "today" }, ...
+        { "title": "ステップ名", "dueDate": "YYYY-MM-DD" }, ...
       ]
     `;
 
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
         const responseText = result.response.text();
 
         // Parse JSON
-        let steps: { title: string, suggestedColumn: string }[] = [];
+        let steps: { title: string, dueDate: string }[] = [];
         try {
             const jsonStr = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
             steps = JSON.parse(jsonStr);
@@ -55,16 +56,17 @@ export async function POST(request: Request) {
 
         // Create these tasks in Google Tasks API
         for (const step of steps) {
-            const validColumns = ['today', 'tomorrow', 'week', 'later'];
-            const column = validColumns.includes(step.suggestedColumn) ? step.suggestedColumn : 'later';
-
-            const due = calculateNewDueDate(column as any);
-
             const taskPayload: any = {
                 title: step.title,
                 notes: `AIによる自動分解 (元のタスク: ${prompt})`
             };
-            if (due) taskPayload.due = due;
+            if (step.dueDate) {
+                try {
+                    taskPayload.due = new Date(step.dueDate).toISOString();
+                } catch (e) {
+                    console.warn('Invalid date format from AI:', step.dueDate);
+                }
+            }
 
             const res = await tasksClient.tasks.insert({
                 tasklist: '@default',

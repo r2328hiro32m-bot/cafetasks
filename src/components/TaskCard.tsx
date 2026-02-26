@@ -8,6 +8,7 @@ import { ja } from 'date-fns/locale';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, Edit3, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -227,96 +228,99 @@ export function TaskCard({ task, isOverlay = false }: TaskCardProps) {
             </button>
 
             {/* Editing Modal */}
-            <AnimatePresence>
-                {isEditModalOpen && !isOverlay && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div
-                            key="edit-backdrop"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                            onClick={(e) => { e.stopPropagation(); setIsEditModalOpen(false); }}
-                        />
+            {typeof document !== 'undefined' && createPortal(
+                <AnimatePresence>
+                    {isEditModalOpen && !isOverlay && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <motion.div
+                                key="edit-backdrop"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                                onClick={(e) => { e.stopPropagation(); setIsEditModalOpen(false); }}
+                            />
 
-                        <motion.div
-                            key="edit-modal"
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-[#2b211e] rounded-3xl p-6 shadow-2xl border border-border flex flex-col gap-5"
-                        >
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-bold flex items-center gap-2">
-                                    <Edit3 size={18} className="text-primary" />
-                                    タスク詳細の編集
-                                </h3>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); setIsEditModalOpen(false); }}
-                                    className="p-2 text-muted-foreground hover:bg-muted rounded-full transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
-
-                            <div className="flex flex-col gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-muted-foreground px-1">タイトル</label>
-                                    <input
-                                        type="text"
-                                        value={editTitle}
-                                        onChange={(e) => setEditTitle(e.target.value)}
-                                        className="w-full bg-muted/50 border border-transparent focus:border-primary/50 focus:bg-white dark:focus:bg-[#1f1614] rounded-xl px-4 py-3 outline-none transition-all"
-                                        placeholder="タスクのタイトル"
-                                    />
+                            <motion.div
+                                key="edit-modal"
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-[#2b211e] rounded-3xl p-6 shadow-2xl border border-border flex flex-col gap-5"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-bold flex items-center gap-2">
+                                        <Edit3 size={18} className="text-primary" />
+                                        タスク詳細の編集
+                                    </h3>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setIsEditModalOpen(false); }}
+                                        className="p-2 text-muted-foreground hover:bg-muted rounded-full transition-colors"
+                                    >
+                                        <X size={20} />
+                                    </button>
                                 </div>
 
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-muted-foreground px-1">メモ (詳細)</label>
-                                    <textarea
-                                        value={editNotes}
-                                        onChange={(e) => setEditNotes(e.target.value)}
-                                        rows={4}
-                                        className="w-full bg-muted/50 border border-transparent focus:border-primary/50 focus:bg-white dark:focus:bg-[#1f1614] rounded-xl px-4 py-3 outline-none transition-all resize-none"
-                                        placeholder="タスクの詳しい内容やメモを入力..."
-                                    />
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-muted-foreground px-1">期日</label>
-                                    <div className="relative flex items-center bg-muted/50 rounded-xl overflow-hidden focus-within:ring-1 focus-within:ring-primary/50 transition-all">
-                                        <Clock size={16} className="absolute left-4 text-muted-foreground pointer-events-none" />
+                                <div className="flex flex-col gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-semibold text-muted-foreground px-1">タイトル</label>
                                         <input
-                                            type="date"
-                                            value={editDueDate}
-                                            onChange={(e) => setEditDueDate(e.target.value)}
-                                            className="w-full bg-transparent pl-11 pr-4 py-3 outline-none cursor-pointer text-foreground/80 dark:[color-scheme:dark]"
+                                            type="text"
+                                            value={editTitle}
+                                            onChange={(e) => setEditTitle(e.target.value)}
+                                            className="w-full bg-muted/50 border border-transparent focus:border-primary/50 focus:bg-white dark:focus:bg-[#1f1614] rounded-xl px-4 py-3 outline-none transition-all"
+                                            placeholder="タスクのタイトル"
                                         />
                                     </div>
-                                </div>
-                            </div>
 
-                            <div className="flex justify-end gap-3 mt-2">
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); setIsEditModalOpen(false); }}
-                                    className="px-5 py-2.5 rounded-xl font-medium text-muted-foreground hover:bg-muted transition-colors"
-                                >
-                                    キャンセル
-                                </button>
-                                <button
-                                    onClick={handleSaveEdit}
-                                    disabled={!editTitle.trim() || isSaving}
-                                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
-                                >
-                                    {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                                    保存
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-semibold text-muted-foreground px-1">メモ (詳細)</label>
+                                        <textarea
+                                            value={editNotes}
+                                            onChange={(e) => setEditNotes(e.target.value)}
+                                            rows={4}
+                                            className="w-full bg-muted/50 border border-transparent focus:border-primary/50 focus:bg-white dark:focus:bg-[#1f1614] rounded-xl px-4 py-3 outline-none transition-all resize-none"
+                                            placeholder="タスクの詳しい内容やメモを入力..."
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-semibold text-muted-foreground px-1">期日</label>
+                                        <div className="relative flex items-center bg-muted/50 rounded-xl overflow-hidden focus-within:ring-1 focus-within:ring-primary/50 transition-all">
+                                            <Clock size={16} className="absolute left-4 text-muted-foreground pointer-events-none" />
+                                            <input
+                                                type="date"
+                                                value={editDueDate}
+                                                onChange={(e) => setEditDueDate(e.target.value)}
+                                                className="w-full bg-transparent pl-11 pr-4 py-3 outline-none cursor-pointer text-foreground/80 dark:[color-scheme:dark]"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end gap-3 mt-2">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setIsEditModalOpen(false); }}
+                                        className="px-5 py-2.5 rounded-xl font-medium text-muted-foreground hover:bg-muted transition-colors"
+                                    >
+                                        キャンセル
+                                    </button>
+                                    <button
+                                        onClick={handleSaveEdit}
+                                        disabled={!editTitle.trim() || isSaving}
+                                        className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
+                                    >
+                                        {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                                        保存
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </motion.div>
     );
 }
