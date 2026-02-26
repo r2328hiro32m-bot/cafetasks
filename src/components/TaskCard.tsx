@@ -80,7 +80,7 @@ export function TaskCard({ task, isOverlay = false }: TaskCardProps) {
         }
     }, []);
 
-    const handleComplete = (e: React.MouseEvent) => {
+    const handleComplete = async (e: React.MouseEvent) => {
         e.stopPropagation();
         if (isCompletedState) return;
 
@@ -88,12 +88,25 @@ export function TaskCard({ task, isOverlay = false }: TaskCardProps) {
         setIsCompleted(true);
         setShowSteam(true);
 
+        // Sync completion status to Google API
+        try {
+            const res = await fetch('/api/tasks', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: task.id, status: 'completed' })
+            });
+            if (res.ok) {
+                // Refresh board after animation gives user time to see it complete
+                setTimeout(() => window.dispatchEvent(new Event('refresh-tasks')), 2000);
+            }
+        } catch (err) {
+            console.error('Failed to complete task in Google Tasks:', err);
+        }
+
         // Hide the steam after some time
         setTimeout(() => {
             setShowSteam(false);
         }, 1500);
-
-        // TODO: callback to parent to actually update data and possibly move it to a 'completed' state or disappear
     };
 
     const handleSaveEdit = async (e: React.MouseEvent) => {

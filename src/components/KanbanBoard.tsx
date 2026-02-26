@@ -49,7 +49,12 @@ export function KanbanBoard() {
                     const data = await res.json();
                     const mappedTasks = data
                         .filter((t: any) => t.status !== 'completed') // Hide completed tasks initially
-                        .map(mapGoogleTaskToKanbanTask);
+                        .map(mapGoogleTaskToKanbanTask)
+                        .sort((a: Task, b: Task) => {
+                            if (!a.dueDate) return 1;
+                            if (!b.dueDate) return -1;
+                            return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+                        });
                     setTasks(mappedTasks);
                 }
             } catch (err) {
@@ -115,7 +120,7 @@ export function KanbanBoard() {
                 if (tasks[activeIndex].columnId !== tasks[overIndex].columnId) {
                     // Moving between columns
                     const newTasks = [...tasks];
-                    newTasks[activeIndex].columnId = tasks[overIndex].columnId;
+                    newTasks[activeIndex] = { ...newTasks[activeIndex], columnId: tasks[overIndex].columnId };
                     // Update due date based on column logic (mock for now, complete later)
                     return arrayMove(newTasks, activeIndex, overIndex);
                 }
@@ -130,7 +135,7 @@ export function KanbanBoard() {
             setTasks((tasks) => {
                 const activeIndex = tasks.findIndex((t) => t.id === activeId);
                 const newTasks = [...tasks];
-                newTasks[activeIndex].columnId = overId as ColumnId;
+                newTasks[activeIndex] = { ...newTasks[activeIndex], columnId: overId as ColumnId };
                 return arrayMove(newTasks, activeIndex, activeIndex);
             });
         }
@@ -149,6 +154,8 @@ export function KanbanBoard() {
         const isActiveTask = active.data.current?.type === 'Task';
         if (!isActiveTask) return;
 
+        const originalColumnId = active.data.current?.task?.columnId as ColumnId;
+
         setTasks((tasks) => {
             const activeIndex = tasks.findIndex((t) => t.id === activeId);
             const overIndex = tasks.findIndex((t) => t.id === overId);
@@ -157,7 +164,7 @@ export function KanbanBoard() {
             const targetColumnId = task.columnId;
             let nextTasks = [...tasks];
 
-            if (activeTask && activeTask.columnId !== targetColumnId) {
+            if (originalColumnId && originalColumnId !== targetColumnId) {
                 // Here we update the dueDate of the task based on targetColumnId.
                 const newDueDate = calculateNewDueDate(targetColumnId);
 
