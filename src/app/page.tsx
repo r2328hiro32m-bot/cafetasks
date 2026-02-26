@@ -10,7 +10,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-2xl" role="img" aria-label="Coffee cup">☕</span>
-            <h1 className="font-bold text-xl text-primary tracking-tight">Cafe Log</h1>
+            <h1 className="font-bold text-xl text-primary tracking-tight">Kanban Tasks</h1>
           </div>
           <div className="flex items-center gap-3 sm:gap-4">
             <WeeklyReflectionModal />

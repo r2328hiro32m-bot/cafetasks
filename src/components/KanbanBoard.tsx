@@ -51,6 +51,7 @@ export function KanbanBoard() {
                         .filter((t: any) => t.status !== 'completed') // Hide completed tasks initially
                         .map(mapGoogleTaskToKanbanTask)
                         .sort((a: Task, b: Task) => {
+                            if (!a.dueDate && !b.dueDate) return 0;
                             if (!a.dueDate) return 1;
                             if (!b.dueDate) return -1;
                             return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();

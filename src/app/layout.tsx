@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cafe Log - Relaxing Task Manager",
+  title: "Kanban Tasks",
   description: "A cozy, calming task manager synced with Google Tasks.",
 };
 

@@ -20,6 +20,7 @@ export async function GET() {
         const response = await tasksClient.tasks.list({
             tasklist: '@default',
             showCompleted: true,
+            showHidden: true,
             maxResults: 100, // Reasonable max for current usage
         });
         return NextResponse.json(response.data.items || []);
