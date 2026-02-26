@@ -25,7 +25,7 @@ export async function POST(request: Request) {
         const { prompt } = await request.json();
         if (!prompt) return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const systemInstruction = `
       あなたはユーザーの「ざっくりしたタスク（例：週末の旅行の準備をする）」を、

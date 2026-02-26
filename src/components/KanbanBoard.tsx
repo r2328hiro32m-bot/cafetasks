@@ -155,14 +155,14 @@ export function KanbanBoard() {
 
             const task = tasks[activeIndex];
             const targetColumnId = task.columnId;
+            let nextTasks = [...tasks];
 
             if (activeTask && activeTask.columnId !== targetColumnId) {
                 // Here we update the dueDate of the task based on targetColumnId.
                 const newDueDate = calculateNewDueDate(targetColumnId);
 
                 // Optimistic update
-                const updatedTasks = [...tasks];
-                updatedTasks[activeIndex].dueDate = newDueDate;
+                nextTasks[activeIndex] = { ...nextTasks[activeIndex], dueDate: newDueDate };
 
                 // Sync with Google API
                 if (session) {
@@ -177,10 +177,10 @@ export function KanbanBoard() {
                 }
             }
 
-            if (activeIndex !== overIndex && tasks[activeIndex].columnId === tasks[overIndex].columnId) {
-                return arrayMove(tasks, activeIndex, overIndex);
+            if (activeIndex !== overIndex && nextTasks[activeIndex].columnId === nextTasks[overIndex].columnId) {
+                return arrayMove(nextTasks, activeIndex, overIndex);
             }
-            return tasks;
+            return nextTasks;
         });
     }
 

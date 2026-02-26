@@ -46,7 +46,7 @@ export async function GET() {
 
         const taskTitles = completedTasks.map(t => `- ${t.title}`).join('\n');
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         const systemInstruction = `
       あなたはユーザーの1週間のがんばりを褒め称え、リラックスできるような優しい言葉をかける「カフェのマスター」のような存在です。
       以下の完了したタスクのリストを見て、心温まる、優しくて前向きな振り返りメッセージを生成してください。

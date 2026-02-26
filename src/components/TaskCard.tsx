@@ -9,6 +9,8 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { X, Save, Edit3, Loader2 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface TaskCardProps {
     task: Task;
@@ -19,6 +21,15 @@ export function TaskCard({ task, isOverlay = false }: TaskCardProps) {
     const isOverdue = task.columnId === 'overdue';
     const [isCompletedState, setIsCompleted] = useState(task.isCompleted);
     const [showSteam, setShowSteam] = useState(false);
+
+    // Edit Modal State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editTitle, setEditTitle] = useState(task.title);
+    const [editNotes, setEditNotes] = useState(task.notes || '');
+    const [editDueDate, setEditDueDate] = useState(
+        task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ''
+    );
+    const [isSaving, setIsSaving] = useState(false);
 
     const {
         setNodeRef,
@@ -84,6 +95,43 @@ export function TaskCard({ task, isOverlay = false }: TaskCardProps) {
         // TODO: callback to parent to actually update data and possibly move it to a 'completed' state or disappear
     };
 
+    const handleSaveEdit = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!editTitle.trim()) return;
+
+        setIsSaving(true);
+        try {
+            const payload: any = { id: task.id, title: editTitle, notes: editNotes };
+            if (editDueDate) {
+                payload.due = new Date(editDueDate).toISOString();
+            }
+
+            const res = await fetch('/api/tasks', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                setIsEditModalOpen(false);
+                window.dispatchEvent(new Event('refresh-tasks'));
+            } else {
+                alert('保存に失敗しました');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('保存に失敗しました');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleCardClick = (e: React.MouseEvent) => {
+        if (!isDragging && !isCompletedState && !isOverlay) {
+            setIsEditModalOpen(true);
+        }
+    };
+
     if (isDragging && !isOverlay) {
         return (
             <div
@@ -104,8 +152,9 @@ export function TaskCard({ task, isOverlay = false }: TaskCardProps) {
             transition={{ duration: 0.4 }}
             ref={setNodeRef}
             style={style}
+            onClick={handleCardClick}
             className={cn(
-                "group relative flex flex-shrink-0 items-start gap-3 bg-white dark:bg-[#382c27] p-4 rounded-xl border border-border transition-shadow",
+                "group relative flex flex-shrink-0 items-start gap-3 bg-white dark:bg-[#382c27] p-4 rounded-xl border border-border transition-shadow cursor-pointer",
                 isOverlay ? "shadow-xl rotate-3 scale-105 cursor-grabbing z-50 ring-2 ring-primary/20" : "shadow-sm hover:shadow-md hover:border-primary/30",
                 isCompletedState && "pointer-events-none"
             )}
@@ -176,6 +225,98 @@ export function TaskCard({ task, isOverlay = false }: TaskCardProps) {
                     <polyline points="20 6 9 17 4 12" />
                 </svg>
             </button>
+
+            {/* Editing Modal */}
+            <AnimatePresence>
+                {isEditModalOpen && !isOverlay && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            key="edit-backdrop"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                            onClick={(e) => { e.stopPropagation(); setIsEditModalOpen(false); }}
+                        />
+
+                        <motion.div
+                            key="edit-modal"
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-[#2b211e] rounded-3xl p-6 shadow-2xl border border-border flex flex-col gap-5"
+                        >
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold flex items-center gap-2">
+                                    <Edit3 size={18} className="text-primary" />
+                                    タスク詳細の編集
+                                </h3>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setIsEditModalOpen(false); }}
+                                    className="p-2 text-muted-foreground hover:bg-muted rounded-full transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="flex flex-col gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground px-1">タイトル</label>
+                                    <input
+                                        type="text"
+                                        value={editTitle}
+                                        onChange={(e) => setEditTitle(e.target.value)}
+                                        className="w-full bg-muted/50 border border-transparent focus:border-primary/50 focus:bg-white dark:focus:bg-[#1f1614] rounded-xl px-4 py-3 outline-none transition-all"
+                                        placeholder="タスクのタイトル"
+                                    />
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground px-1">メモ (詳細)</label>
+                                    <textarea
+                                        value={editNotes}
+                                        onChange={(e) => setEditNotes(e.target.value)}
+                                        rows={4}
+                                        className="w-full bg-muted/50 border border-transparent focus:border-primary/50 focus:bg-white dark:focus:bg-[#1f1614] rounded-xl px-4 py-3 outline-none transition-all resize-none"
+                                        placeholder="タスクの詳しい内容やメモを入力..."
+                                    />
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground px-1">期日</label>
+                                    <div className="relative flex items-center bg-muted/50 rounded-xl overflow-hidden focus-within:ring-1 focus-within:ring-primary/50 transition-all">
+                                        <Clock size={16} className="absolute left-4 text-muted-foreground pointer-events-none" />
+                                        <input
+                                            type="date"
+                                            value={editDueDate}
+                                            onChange={(e) => setEditDueDate(e.target.value)}
+                                            className="w-full bg-transparent pl-11 pr-4 py-3 outline-none cursor-pointer text-foreground/80 dark:[color-scheme:dark]"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-3 mt-2">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setIsEditModalOpen(false); }}
+                                    className="px-5 py-2.5 rounded-xl font-medium text-muted-foreground hover:bg-muted transition-colors"
+                                >
+                                    キャンセル
+                                </button>
+                                <button
+                                    onClick={handleSaveEdit}
+                                    disabled={!editTitle.trim() || isSaving}
+                                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
+                                >
+                                    {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                                    保存
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </motion.div>
     );
 }

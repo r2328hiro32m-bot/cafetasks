@@ -46,10 +46,12 @@ export function TaskInputArea() {
                 setAiTask('');
                 window.dispatchEvent(new Event('refresh-tasks'));
             } else {
-                alert('AI分解中にエラーが発生しました');
+                const errData = await res.json().catch(() => ({}));
+                alert(`AI分解エラー: ${errData.error || '予期せぬエラーが発生しました'}`);
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            alert(`AI通信エラー: ${err.message || String(err)}`);
         } finally {
             setIsAiProcessing(false);
         }
