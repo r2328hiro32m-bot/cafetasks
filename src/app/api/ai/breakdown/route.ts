@@ -5,6 +5,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { calculateNewDueDate, mapGoogleTaskToKanbanTask } from '@/lib/task-utils';
 import { google } from 'googleapis';
 
+export const maxDuration = 60; // Vercel hobby plan timeout limit extension for AI tasks
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 function getTasksClient(accessToken: string) {
@@ -74,8 +76,8 @@ export async function POST(request: Request) {
 
         return NextResponse.json({ message: 'Success', tasks: createdTasks });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error generating AI task:', error);
-        return NextResponse.json({ error: 'AI Task Breakdown Failed' }, { status: 500 });
+        return NextResponse.json({ error: error?.message || 'AI Task Breakdown Failed' }, { status: 500 });
     }
 }

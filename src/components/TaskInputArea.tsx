@@ -8,6 +8,7 @@ export function TaskInputArea() {
     const { data: session } = useSession();
     const [normalTask, setNormalTask] = useState('');
     const [aiTask, setAiTask] = useState('');
+    const [dueDate, setDueDate] = useState(() => new Date().toISOString().split('T')[0]);
     const [isAdding, setIsAdding] = useState(false);
     const [isAiProcessing, setIsAiProcessing] = useState(false);
 
@@ -18,10 +19,11 @@ export function TaskInputArea() {
             const res = await fetch('/api/tasks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: normalTask, due: new Date().toISOString() }) // default to today
+                body: JSON.stringify({ title: normalTask, due: new Date(dueDate).toISOString() })
             });
             if (res.ok) {
                 setNormalTask('');
+                setDueDate(new Date().toISOString().split('T')[0]);
                 window.dispatchEvent(new Event('refresh-tasks'));
             }
         } catch (err) {
@@ -69,13 +71,16 @@ export function TaskInputArea() {
                     />
                 </div>
                 <div className="flex gap-2">
-                    <button
-                        disabled={!session || isAdding}
-                        className="flex items-center justify-center gap-2 bg-muted hover:bg-muted-foreground/10 text-foreground px-4 py-3 rounded-xl transition-colors shrink-0 disabled:opacity-50"
-                    >
-                        <Calendar size={18} />
-                        <span className="sr-only sm:not-sr-only sm:text-sm">今日</span>
-                    </button>
+                    <div className="relative flex items-center bg-muted hover:bg-muted-foreground/10 text-foreground px-3 py-3 rounded-xl transition-colors shrink-0 disabled:opacity-50">
+                        <Calendar size={18} className="absolute left-3 pointer-events-none" />
+                        <input
+                            type="date"
+                            disabled={!session || isAdding}
+                            value={dueDate}
+                            onChange={(e) => setDueDate(e.target.value)}
+                            className="bg-transparent pl-7 pr-1 text-sm outline-none cursor-pointer w-full h-full text-foreground/80 dark:[color-scheme:dark]"
+                        />
+                    </div>
                     <button
                         onClick={handleAddNormalTask}
                         disabled={!normalTask.trim() || !session || isAdding}

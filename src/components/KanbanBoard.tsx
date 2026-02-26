@@ -153,14 +153,10 @@ export function KanbanBoard() {
             const activeIndex = tasks.findIndex((t) => t.id === activeId);
             const overIndex = tasks.findIndex((t) => t.id === overId);
 
-            // If dropping into a different column, we actually update the task logic here.
-            // E.g. setting due date to "today" if dropped in "today" column.
             const task = tasks[activeIndex];
-            const targetColumnId = over.data.current?.type === 'Column'
-                ? (overId as ColumnId)
-                : tasks[overIndex]?.columnId || task.columnId;
+            const targetColumnId = task.columnId;
 
-            if (task.columnId !== targetColumnId) {
+            if (activeTask && activeTask.columnId !== targetColumnId) {
                 // Here we update the dueDate of the task based on targetColumnId.
                 const newDueDate = calculateNewDueDate(targetColumnId);
 
@@ -203,7 +199,7 @@ export function KanbanBoard() {
                     </div>
                 </div>
             ) : (
-                <div className="flex h-full gap-4 overflow-x-auto snap-x snap-mandatory pt-2 pb-6 px-1">
+                <div className={`flex h-full gap-4 overflow-x-auto pt-2 pb-6 px-1 ${activeTask ? '' : 'snap-x snap-mandatory'}`}>
                     {COLUMNS.map((column) => (
                         <div key={column.id} className="min-w-[280px] sm:min-w-[320px] w-full max-w-[350px] shrink-0 h-full flex flex-col snap-center">
                             <KanbanColumn
