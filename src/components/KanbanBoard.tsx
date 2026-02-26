@@ -38,15 +38,22 @@ export function KanbanBoard() {
     const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
     const [activeTask, setActiveTask] = useState<Task | null>(null);
     const [loading, setLoading] = useState(false);
+    const [fetchError, setFetchError] = useState(false);
 
     useEffect(() => {
         async function fetchTasks() {
             if (!session) return;
             setLoading(true);
+            setFetchError(false);
             try {
                 const res = await fetch('/api/tasks');
                 if (res.ok) {
                     const data = await res.json();
+                    if (!Array.isArray(data)) {
+                        console.error('Invalid data format', data);
+                        setFetchError(true);
+                        return;
+                    }
                     const mappedTasks = data
                         .filter((t: any) => t.status !== 'completed') // Hide completed tasks initially
                         .map(mapGoogleTaskToKanbanTask)
@@ -57,9 +64,13 @@ export function KanbanBoard() {
                             return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
                         });
                     setTasks(mappedTasks);
+                } else {
+                    console.error('Fetch failed with status:', res.status);
+                    setFetchError(true);
                 }
             } catch (err) {
                 console.error('Failed to load tasks', err);
+                setFetchError(true);
             } finally {
                 setLoading(false);
             }
@@ -200,7 +211,16 @@ export function KanbanBoard() {
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
         >
-            {loading && tasks.length === 0 ? (
+            {fetchError ? (
+                <div className="flex h-full items-center justify-center w-full flex-col gap-4 text-center px-4">
+                    <span className="text-4xl">🔑</span>
+                    <h2 className="font-bold text-lg text-foreground">Google認証の有効期限が切れました</h2>
+                    <p className="text-muted-foreground text-sm max-w-sm">
+                        セキュリティのため、一定時間で接続がリセットされます。<br />
+                        お手数ですが、右上のメニューから<strong>一度ログアウトし、再度ログイン</strong>してタスクを再読み込みしてください。
+                    </p>
+                </div>
+            ) : loading && tasks.length === 0 ? (
                 <div className="flex h-full items-center justify-center w-full text-muted-foreground">
                     <div className="animate-pulse flex items-center gap-2">
                         <span className="text-xl">☕</span> タスクを読み込み中...
